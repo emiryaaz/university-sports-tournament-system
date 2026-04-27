@@ -1,0 +1,17 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Node / React
+node_modules/
+dist/
+.env
+.env.local
+
+# OS / Editor
+.DS_Store
+.vscode/
+.idea/
