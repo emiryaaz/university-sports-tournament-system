@@ -17,4 +17,6 @@ public class TournamentResponseDto
     public DateTime EndDate { get; set; }
 
     public List<string> Teams { get; set; } = new();
+
+    public List<FixtureResponseDto> Fixtures { get; set; } = new();
 }

@@ -39,32 +39,47 @@ public class TournamentsController : ControllerBase
         return tournaments;
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<TournamentResponseDto>> GetTournament(int id)
-    {
-        var tournament = await _context.Tournaments
-            .Include(t => t.TournamentTeams)
-            .ThenInclude(tt => tt.Team)
-            .Where(t => t.Id == id)
-            .Select(t => new TournamentResponseDto
+[HttpGet("{id}")]
+public async Task<ActionResult<TournamentResponseDto>> GetTournament(int id)
+{
+    var tournament = await _context.Tournaments
+        .Where(t => t.Id == id)
+        .Include(t => t.TournamentTeams)
+        .ThenInclude(tt => tt.Team)
+        .Include(t => t.Fixtures)
+        .ThenInclude(f => f.HomeTeam)
+        .Include(t => t.Fixtures)
+        .ThenInclude(f => f.AwayTeam)
+        .Select(t => new TournamentResponseDto
+        {
+            Id = t.Id,
+            Name = t.Name,
+            SportType = t.SportType,
+            Format = t.Format,
+            Status = t.Status,
+            StartDate = t.StartDate,
+            EndDate = t.EndDate,
+            Teams = t.TournamentTeams.Select(tt => tt.Team.Name).ToList(),
+            Fixtures = t.Fixtures.Select(f => new FixtureResponseDto
             {
-                Id = t.Id,
-                Name = t.Name,
-                SportType = t.SportType,
-                Format = t.Format,
-                Status = t.Status,
-                StartDate = t.StartDate,
-                EndDate = t.EndDate,
-                Teams = t.TournamentTeams.Select(tt => tt.Team.Name).ToList()
-            })
-            .FirstOrDefaultAsync();
+                Id = f.Id,
+                TournamentId = f.TournamentId,
+                TournamentName = t.Name,
+                HomeTeamId = f.HomeTeamId,
+                HomeTeamName = f.HomeTeam.Name,
+                AwayTeamId = f.AwayTeamId,
+                AwayTeamName = f.AwayTeam.Name,
+                MatchDate = f.MatchDate,
+                Status = f.Status
+            }).ToList()
+        })
+        .FirstOrDefaultAsync();
 
-        if (tournament == null)
-            return NotFound();
+    if (tournament == null)
+        return NotFound();
 
-        return tournament;
-    }
-
+    return tournament;
+}
     [HttpPost]
     public async Task<ActionResult<TournamentResponseDto>> CreateTournament(CreateTournamentDto dto)
     {
