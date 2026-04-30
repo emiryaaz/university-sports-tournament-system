@@ -161,11 +161,26 @@ public async Task<ActionResult<MatchResultResponseDto>> GetFixtureResult(int id)
         _context.MatchResults.Add(result);
 
         //  Standing update
-        await UpdateStandings(fixture, dto.HomeScore, dto.AwayScore);
+await UpdateStandings(fixture, dto.HomeScore, dto.AwayScore);
 
+await _context.SaveChangesAsync();
+
+var allFixturesCompleted = await _context.Fixtures
+    .Where(f => f.TournamentId == fixture.TournamentId)
+    .AllAsync(f => f.Status == "Completed");
+
+if (allFixturesCompleted)
+{
+    var tournament = await _context.Tournaments.FindAsync(fixture.TournamentId);
+
+    if(tournament != null)
+    {
+        tournament.Status = "Finished";
         await _context.SaveChangesAsync();
+    }
+}
 
-        return Ok("Result entered and standings updated.");
+return Ok("Result entered, standings updated, and tournament status checked.");
     }
 
     private async Task UpdateStandings(Fixture fixture, int homeScore, int awayScore)
