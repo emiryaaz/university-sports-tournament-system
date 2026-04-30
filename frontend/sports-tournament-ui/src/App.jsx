@@ -6,6 +6,8 @@ function App() {
   const [users, setUsers] = useState([]);
   const [teams, setTeams] = useState([]);
   const [tournaments, setTournaments] = useState([]);
+  const [selectedTournament, setSelectedTournament] = useState(null);
+  const [matchResults, setMatchResults] = useState({});
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -36,6 +38,11 @@ function App() {
   async function fetchTournaments() {
     const response = await api.get("/Tournaments");
     setTournaments(response.data);
+  }
+
+  async function fetchTournamentDetails(tournamentId) {
+    const response = await api.get(`/Tournaments/${tournamentId}`);
+    setSelectedTournament(response.data);
   }
 
   async function createUser(e) {
@@ -97,7 +104,45 @@ function App() {
 
   async function generateFixtures(tournamentId) {
     await api.post(`/Tournaments/${tournamentId}/generate-fixtures`);
-    fetchTournaments();
+    await fetchTournaments();
+    await fetchTournamentDetails(tournamentId);
+  }
+
+  function updateMatchResultInput(fixtureId, field, value) {
+    setMatchResults((previous) => ({
+      ...previous,
+      [fixtureId]: {
+        ...previous[fixtureId],
+        [field]: value,
+      },
+    }));
+  }
+
+  async function submitMatchResult(fixtureId) {
+    const result = matchResults[fixtureId];
+
+    if (!result || result.homeScore === undefined || result.awayScore === undefined) {
+      alert("Please enter both scores.");
+      return;
+    }
+
+    await api.post("/Fixtures/enter-result", {
+      fixtureId,
+      homeScore: Number(result.homeScore),
+      awayScore: Number(result.awayScore),
+    });
+
+    setMatchResults((previous) => {
+      const copy = { ...previous };
+      delete copy[fixtureId];
+      return copy;
+    });
+
+    await fetchTournaments();
+
+    if (selectedTournament) {
+      await fetchTournamentDetails(selectedTournament.id);
+    }
   }
 
   function handleMemberSelection(e) {
@@ -279,6 +324,106 @@ function App() {
       </section>
 
       <section className="card">
+        <h2>Tournaments</h2>
+
+        {tournaments.length === 0 ? (
+          <p>No tournaments found.</p>
+        ) : (
+          <ul>
+            {tournaments.map((tournament) => (
+              <li key={tournament.id}>
+                <strong>{tournament.name}</strong> — {tournament.sportType}
+                <br />
+                Format: {tournament.format}
+                <br />
+                Status: {tournament.status}
+                <br />
+                Teams: {tournament.teams.join(", ")}
+                <br />
+
+                <button onClick={() => fetchTournamentDetails(tournament.id)}>
+                  View Details
+                </button>
+
+                {tournament.status === "Draft" && (
+                  <button onClick={() => generateFixtures(tournament.id)}>
+                    Generate Fixtures
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {selectedTournament && (
+        <section className="card">
+          <h2>{selectedTournament.name} Details</h2>
+
+          <p>
+            <strong>Status:</strong> {selectedTournament.status}
+          </p>
+
+          <h3>Fixtures</h3>
+
+          {selectedTournament.fixtures.length === 0 ? (
+            <p>No fixtures generated yet.</p>
+          ) : (
+            <ul>
+              {selectedTournament.fixtures.map((fixture) => (
+                <li key={fixture.id} className="fixture-item">
+                  <strong>
+                    #{fixture.id} — {fixture.homeTeamName} vs{" "}
+                    {fixture.awayTeamName}
+                  </strong>
+                  <br />
+                  Date: {new Date(fixture.matchDate).toLocaleString()}
+                  <br />
+                  Status: {fixture.status}
+
+                  {fixture.status === "Scheduled" && (
+                    <div className="score-form">
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Home score"
+                        value={matchResults[fixture.id]?.homeScore ?? ""}
+                        onChange={(e) =>
+                          updateMatchResultInput(
+                            fixture.id,
+                            "homeScore",
+                            e.target.value
+                          )
+                        }
+                      />
+
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Away score"
+                        value={matchResults[fixture.id]?.awayScore ?? ""}
+                        onChange={(e) =>
+                          updateMatchResultInput(
+                            fixture.id,
+                            "awayScore",
+                            e.target.value
+                          )
+                        }
+                      />
+
+                      <button onClick={() => submitMatchResult(fixture.id)}>
+                        Submit Result
+                      </button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      <section className="card">
         <h2>Users</h2>
 
         {users.length === 0 ? (
@@ -311,34 +456,6 @@ function App() {
                 Captain: {team.captainName}
                 <br />
                 Members: {team.members.join(", ")}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="card">
-        <h2>Tournaments</h2>
-
-        {tournaments.length === 0 ? (
-          <p>No tournaments found.</p>
-        ) : (
-          <ul>
-            {tournaments.map((tournament) => (
-              <li key={tournament.id}>
-                <strong>{tournament.name}</strong> — {tournament.sportType}
-                <br />
-                Format: {tournament.format}
-                <br />
-                Status: {tournament.status}
-                <br />
-                Teams: {tournament.teams.join(", ")}
-                <br />
-                {tournament.status === "Draft" && (
-                  <button onClick={() => generateFixtures(tournament.id)}>
-                    Generate Fixtures
-                  </button>
-                )}
               </li>
             ))}
           </ul>

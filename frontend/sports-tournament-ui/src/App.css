@@ -39,3 +39,17 @@ button {
 select[multiple] {
   min-height: 120px;
 }
+.fixture-item {
+  margin-bottom: 18px;
+}
+
+.score-form {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.score-form input {
+  max-width: 140px;
+}
