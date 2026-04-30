@@ -215,6 +215,34 @@ public async Task<ActionResult<TournamentResponseDto>> GetTournament(int id)
         return response;
     }
 
+[HttpGet("{id}/standings")]
+public async Task<ActionResult<IEnumerable<StandingResponseDto>>> GetStandings(int id)
+{
+    var tournamentExists = await _context.Tournaments.AnyAsync(t => t.Id == id);
+
+    if (!tournamentExists)
+        return NotFound("Tournament not found.");
+
+    var standings = await _context.Standings
+        .Where(s => s.TournamentId == id)
+        .Include(s => s.Team)
+        .OrderByDescending(s => s.Points)
+        .ThenByDescending(s => s.Wins)
+        .Select(s => new StandingResponseDto
+        {
+            TeamId = s.TeamId,
+            TeamName = s.Team.Name,
+            Played = s.Played,
+            Wins = s.Wins,
+            Draws = s.Draws,
+            Losses = s.Losses,
+            Points = s.Points
+        })
+        .ToListAsync();
+
+    return standings;
+}
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTournament(int id)
     {
