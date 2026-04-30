@@ -92,6 +92,37 @@ public async Task<ActionResult<IEnumerable<FixtureResponseDto>>> GetFixturesByTo
 
     return fixtures;
 }
+
+[HttpGet("{id}/result")]
+public async Task<ActionResult<MatchResultResponseDto>> GetFixtureResult(int id)
+{
+    var result = await _context.MatchResults
+        .Include(r => r.Fixture)
+        .ThenInclude(f => f.Tournament)
+        .Include(r => r.Fixture)
+        .ThenInclude(f => f.HomeTeam)
+        .Include(r => r.Fixture)
+        .ThenInclude(f => f.AwayTeam)
+        .Include(r => r.WinnerTeam)
+        .Where(r => r.FixtureId == id)
+        .Select(r => new MatchResultResponseDto
+        {
+            FixtureId = r.FixtureId,
+            TournamentName = r.Fixture.Tournament.Name,
+            HomeTeamName = r.Fixture.HomeTeam.Name,
+            HomeScore = r.HomeScore,
+            AwayTeamName = r.Fixture.AwayTeam.Name,
+            AwayScore = r.AwayScore,
+            WinnerTeamName = r.WinnerTeam.Name
+        })
+        .FirstOrDefaultAsync();
+
+    if (result == null)
+        return NotFound("Result not found for this fixture.");
+
+    return result;
+}
+
     [HttpPost("enter-result")]
     public async Task<IActionResult> EnterResult(EnterMatchResultDto dto)
     {
@@ -129,7 +160,7 @@ public async Task<ActionResult<IEnumerable<FixtureResponseDto>>> GetFixturesByTo
 
         _context.MatchResults.Add(result);
 
-        // 🔥 Standing update
+        //  Standing update
         await UpdateStandings(fixture, dto.HomeScore, dto.AwayScore);
 
         await _context.SaveChangesAsync();
