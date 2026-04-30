@@ -5,6 +5,7 @@ import "./App.css";
 function App() {
   const [users, setUsers] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [tournaments, setTournaments] = useState([]);
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -15,6 +16,13 @@ function App() {
   const [captainId, setCaptainId] = useState("");
   const [memberUserIds, setMemberUserIds] = useState([]);
 
+  const [tournamentName, setTournamentName] = useState("");
+  const [tournamentSportType, setTournamentSportType] = useState("Football");
+  const [tournamentFormat, setTournamentFormat] = useState("RoundRobin");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [tournamentTeamIds, setTournamentTeamIds] = useState([]);
+
   async function fetchUsers() {
     const response = await api.get("/Users");
     setUsers(response.data);
@@ -23,6 +31,11 @@ function App() {
   async function fetchTeams() {
     const response = await api.get("/Teams");
     setTeams(response.data);
+  }
+
+  async function fetchTournaments() {
+    const response = await api.get("/Tournaments");
+    setTournaments(response.data);
   }
 
   async function createUser(e) {
@@ -60,6 +73,33 @@ function App() {
     fetchUsers();
   }
 
+  async function createTournament(e) {
+    e.preventDefault();
+
+    await api.post("/Tournaments", {
+      name: tournamentName,
+      sportType: tournamentSportType,
+      format: tournamentFormat,
+      startDate: new Date(startDate).toISOString(),
+      endDate: new Date(endDate).toISOString(),
+      teamIds: tournamentTeamIds.map(Number),
+    });
+
+    setTournamentName("");
+    setTournamentSportType("Football");
+    setTournamentFormat("RoundRobin");
+    setStartDate("");
+    setEndDate("");
+    setTournamentTeamIds([]);
+
+    fetchTournaments();
+  }
+
+  async function generateFixtures(tournamentId) {
+    await api.post(`/Tournaments/${tournamentId}/generate-fixtures`);
+    fetchTournaments();
+  }
+
   function handleMemberSelection(e) {
     const selectedValues = Array.from(
       e.target.selectedOptions,
@@ -69,9 +109,19 @@ function App() {
     setMemberUserIds(selectedValues);
   }
 
+  function handleTournamentTeamSelection(e) {
+    const selectedValues = Array.from(
+      e.target.selectedOptions,
+      (option) => option.value
+    );
+
+    setTournamentTeamIds(selectedValues);
+  }
+
   useEffect(() => {
     fetchUsers();
     fetchTeams();
+    fetchTournaments();
   }, []);
 
   return (
@@ -161,6 +211,74 @@ function App() {
       </section>
 
       <section className="card">
+        <h2>Create Tournament</h2>
+
+        <form onSubmit={createTournament} className="form">
+          <input
+            type="text"
+            placeholder="Tournament name"
+            value={tournamentName}
+            onChange={(e) => setTournamentName(e.target.value)}
+            required
+          />
+
+          <select
+            value={tournamentSportType}
+            onChange={(e) => setTournamentSportType(e.target.value)}
+          >
+            <option value="Football">Football</option>
+            <option value="Basketball">Basketball</option>
+            <option value="Volleyball">Volleyball</option>
+            <option value="Tennis">Tennis</option>
+          </select>
+
+          <select
+            value={tournamentFormat}
+            onChange={(e) => setTournamentFormat(e.target.value)}
+          >
+            <option value="RoundRobin">Round Robin</option>
+            <option value="SingleElimination">Single Elimination</option>
+          </select>
+
+          <label>Start Date</label>
+          <input
+            type="datetime-local"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            required
+          />
+
+          <label>End Date</label>
+          <input
+            type="datetime-local"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            required
+          />
+
+          <label>Tournament Teams</label>
+          <select
+            multiple
+            value={tournamentTeamIds}
+            onChange={handleTournamentTeamSelection}
+            required
+          >
+            {teams
+              .filter((team) => team.sportType === tournamentSportType)
+              .map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name} ({team.sportType})
+                </option>
+              ))}
+          </select>
+
+          <small>En az 2 takım seçmelisin.</small>
+
+          <button type="submit">Create Tournament</button>
+        </form>
+      </section>
+
+      <section className="card">
         <h2>Users</h2>
 
         {users.length === 0 ? (
@@ -193,6 +311,34 @@ function App() {
                 Captain: {team.captainName}
                 <br />
                 Members: {team.members.join(", ")}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>Tournaments</h2>
+
+        {tournaments.length === 0 ? (
+          <p>No tournaments found.</p>
+        ) : (
+          <ul>
+            {tournaments.map((tournament) => (
+              <li key={tournament.id}>
+                <strong>{tournament.name}</strong> — {tournament.sportType}
+                <br />
+                Format: {tournament.format}
+                <br />
+                Status: {tournament.status}
+                <br />
+                Teams: {tournament.teams.join(", ")}
+                <br />
+                {tournament.status === "Draft" && (
+                  <button onClick={() => generateFixtures(tournament.id)}>
+                    Generate Fixtures
+                  </button>
+                )}
               </li>
             ))}
           </ul>
