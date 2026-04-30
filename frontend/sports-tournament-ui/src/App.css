@@ -36,3 +36,6 @@ button {
 button {
   cursor: pointer;
 }
+select[multiple] {
+  min-height: 120px;
+}
