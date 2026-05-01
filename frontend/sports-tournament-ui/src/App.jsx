@@ -171,6 +171,27 @@ function App() {
     setTournamentTeamIds(selectedValues);
   }
 
+	async function resetDatabase() {
+	  const confirmed = window.confirm(
+	    "Are you sure? This will delete all data and reset IDs."
+	  );
+
+	  if (!confirmed) return;
+
+	  await api.delete("/Dev/reset-database");
+
+	  setUsers([]);
+	  setTeams([]);
+	  setTournaments([]);
+	  setSelectedTournament(null);
+	  setStandings([]);
+	  setMatchResults({});
+
+	  await fetchUsers();
+	  await fetchTeams();
+	  await fetchTournaments();
+	}
+
   useEffect(() => {
     fetchUsers();
     fetchTeams();
@@ -499,6 +520,14 @@ function App() {
           </ul>
         )}
       </section>
+<section className="card danger-card">
+  <h2>Development Tools</h2>
+  <p>This button clears all test data and resets IDs.</p>
+
+  <button className="danger-button" onClick={resetDatabase}>
+    Reset Database
+  </button>
+</section>
     </div>
   );
 }

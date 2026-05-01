@@ -69,3 +69,17 @@ td {
 th {
   background-color: #eee;
 }
+.danger-card {
+  border-color: #ffb3b3;
+  background-color: #fff5f5;
+}
+
+.danger-button {
+  background-color: #d32f2f;
+  color: white;
+  border: none;
+}
+
+.danger-button:hover {
+  background-color: #b71c1c;
+}
