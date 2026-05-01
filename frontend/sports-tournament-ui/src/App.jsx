@@ -25,6 +25,8 @@ function App() {
   const [endDate, setEndDate] = useState("");
   const [tournamentTeamIds, setTournamentTeamIds] = useState([]);
 
+  const [standings, setStandings] = useState([]);
+
   async function fetchUsers() {
     const response = await api.get("/Users");
     setUsers(response.data);
@@ -43,6 +45,7 @@ function App() {
   async function fetchTournamentDetails(tournamentId) {
     const response = await api.get(`/Tournaments/${tournamentId}`);
     setSelectedTournament(response.data);
+    await fetchStandings(tournamentId);
   }
 
   async function createUser(e) {
@@ -143,6 +146,11 @@ function App() {
     if (selectedTournament) {
       await fetchTournamentDetails(selectedTournament.id);
     }
+  }
+
+  async function fetchStandings(tournamentId) {
+    const response = await api.get(`/Tournaments/${tournamentId}/standings`);
+    setStandings(response.data);
   }
 
   function handleMemberSelection(e) {
@@ -419,7 +427,37 @@ function App() {
                 </li>
               ))}
             </ul>
-          )}
+	)}
+	<h3>Standings</h3>
+
+	{standings.length === 0 ? (
+	  <p>No standings available yet.</p>
+	) : (
+	  <table>
+	    <thead>
+	      <tr>
+	        <th>Team</th>
+	        <th>Played</th>
+	        <th>Wins</th>
+	        <th>Draws</th>
+	        <th>Losses</th>
+	        <th>Points</th>
+	      </tr>
+	    </thead>
+	    <tbody>
+	      {standings.map((standing) => (
+	        <tr key={standing.teamId}>
+	          <td>{standing.teamName}</td>
+	          <td>{standing.played}</td>
+	          <td>{standing.wins}</td>
+	          <td>{standing.draws}</td>
+	          <td>{standing.losses}</td>
+	          <td>{standing.points}</td>
+	        </tr>
+	      ))}
+	    </tbody>
+	  </table>
+	)}
         </section>
       )}
 

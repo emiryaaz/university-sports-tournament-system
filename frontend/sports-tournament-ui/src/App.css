@@ -53,3 +53,19 @@ select[multiple] {
 .score-form input {
   max-width: 140px;
 }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+th {
+  background-color: #eee;
+}
