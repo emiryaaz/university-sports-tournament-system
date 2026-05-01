@@ -24,6 +24,9 @@ function App() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [tournamentTeamIds, setTournamentTeamIds] = useState([]);
+ 
+const [message, setMessage] = useState("");
+const [messageType, setMessageType] = useState("");
 
   const [standings, setStandings] = useState([]);
 
@@ -37,6 +40,24 @@ function App() {
     setTeams(response.data);
   }
 
+ function showSuccess(text) {
+  setMessage(text);
+  setMessageType("success");
+}
+
+function showError(error) {
+  const backendMessage =
+    error.response?.data || "An unexpected error occurred.";
+
+  setMessage(
+    typeof backendMessage === "string"
+      ? backendMessage
+      : JSON.stringify(backendMessage)
+  );
+
+  setMessageType("error");
+}
+
   async function fetchTournaments() {
     const response = await api.get("/Tournaments");
     setTournaments(response.data);
@@ -48,9 +69,10 @@ function App() {
     await fetchStandings(tournamentId);
   }
 
-  async function createUser(e) {
-    e.preventDefault();
+async function createUser(e) {
+  e.preventDefault();
 
+  try {
     await api.post("/Users", {
       fullName,
       email,
@@ -61,12 +83,17 @@ function App() {
     setEmail("");
     setRole("Student");
 
-    fetchUsers();
+    await fetchUsers();
+    showSuccess("User created successfully.");
+  } catch (error) {
+    showError(error);
   }
+}
 
   async function createTeam(e) {
-    e.preventDefault();
+  e.preventDefault();
 
+  try {
     await api.post("/Teams", {
       name: teamName,
       sportType,
@@ -79,13 +106,18 @@ function App() {
     setCaptainId("");
     setMemberUserIds([]);
 
-    fetchTeams();
-    fetchUsers();
+    await fetchTeams();
+    await fetchUsers();
+    showSuccess("Team created successfully.");
+  } catch (error) {
+    showError(error);
   }
+}
 
-  async function createTournament(e) {
-    e.preventDefault();
+async function createTournament(e) {
+  e.preventDefault();
 
+  try {
     await api.post("/Tournaments", {
       name: tournamentName,
       sportType: tournamentSportType,
@@ -102,14 +134,23 @@ function App() {
     setEndDate("");
     setTournamentTeamIds([]);
 
-    fetchTournaments();
+    await fetchTournaments();
+    showSuccess("Tournament created successfully.");
+  } catch (error) {
+    showError(error);
   }
+}  
 
-  async function generateFixtures(tournamentId) {
+async function generateFixtures(tournamentId) {
+  try {
     await api.post(`/Tournaments/${tournamentId}/generate-fixtures`);
     await fetchTournaments();
     await fetchTournamentDetails(tournamentId);
+    showSuccess("Fixtures generated successfully.");
+  } catch (error) {
+    showError(error);
   }
+}  
 
   function updateMatchResultInput(fixtureId, field, value) {
     setMatchResults((previous) => ({
@@ -122,13 +163,15 @@ function App() {
   }
 
   async function submitMatchResult(fixtureId) {
-    const result = matchResults[fixtureId];
+  const result = matchResults[fixtureId];
 
-    if (!result || result.homeScore === undefined || result.awayScore === undefined) {
-      alert("Please enter both scores.");
-      return;
-    }
+  if (!result || result.homeScore === undefined || result.awayScore === undefined) {
+    setMessage("Please enter both scores.");
+    setMessageType("error");
+    return;
+  }
 
+  try {
     await api.post("/Fixtures/enter-result", {
       fixtureId,
       homeScore: Number(result.homeScore),
@@ -146,7 +189,12 @@ function App() {
     if (selectedTournament) {
       await fetchTournamentDetails(selectedTournament.id);
     }
+
+    showSuccess("Match result submitted successfully.");
+  } catch (error) {
+    showError(error);
   }
+}
 
   async function fetchStandings(tournamentId) {
     const response = await api.get(`/Tournaments/${tournamentId}/standings`);
@@ -171,26 +219,32 @@ function App() {
     setTournamentTeamIds(selectedValues);
   }
 
-	async function resetDatabase() {
-	  const confirmed = window.confirm(
-	    "Are you sure? This will delete all data and reset IDs."
-	  );
+async function resetDatabase() {
+  const confirmed = window.confirm(
+    "Are you sure? This will delete all data and reset IDs."
+  );
 
-	  if (!confirmed) return;
+  if (!confirmed) return;
 
-	  await api.delete("/Dev/reset-database");
+  try {
+    await api.delete("/Dev/reset-database");
 
-	  setUsers([]);
-	  setTeams([]);
-	  setTournaments([]);
-	  setSelectedTournament(null);
-	  setStandings([]);
-	  setMatchResults({});
+    setUsers([]);
+    setTeams([]);
+    setTournaments([]);
+    setSelectedTournament(null);
+    setStandings([]);
+    setMatchResults({});
 
-	  await fetchUsers();
-	  await fetchTeams();
-	  await fetchTournaments();
-	}
+    await fetchUsers();
+    await fetchTeams();
+    await fetchTournaments();
+
+    showSuccess("Database reset successfully.");
+  } catch (error) {
+    showError(error);
+  }
+}
 
   useEffect(() => {
     fetchUsers();
@@ -201,6 +255,12 @@ function App() {
   return (
     <div className="container">
       <h1>University Sports Tournament System</h1>
+
+	{message && (
+	  <div className={`message ${messageType}`}>
+	    {message}
+	  </div>
+	)}
 
       <section className="card">
         <h2>Create User</h2>
