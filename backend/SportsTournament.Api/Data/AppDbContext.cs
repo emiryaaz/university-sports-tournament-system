@@ -12,8 +12,12 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Team> Teams => Set<Team>();
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
+    public DbSet<TeamInvitation> TeamInvitations => Set<TeamInvitation>();
+    public DbSet<TeamJoinRequest> TeamJoinRequests => Set<TeamJoinRequest>();
     public DbSet<Tournament> Tournaments => Set<Tournament>();
     public DbSet<TournamentTeam> TournamentTeams => Set<TournamentTeam>();
+    public DbSet<TournamentInvitation> TournamentInvitations => Set<TournamentInvitation>();
+    public DbSet<TournamentJoinRequest> TournamentJoinRequests => Set<TournamentJoinRequest>();
     public DbSet<Facility> Facilities => Set<Facility>();
     public DbSet<Fixture> Fixtures => Set<Fixture>();
     public DbSet<MatchResult> MatchResults => Set<MatchResult>();
@@ -38,6 +42,12 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<TournamentTeam>()
             .HasIndex(tt => new { tt.TournamentId, tt.TeamId })
             .IsUnique();
+
+	modelBuilder.Entity<TournamentInvitation>()
+            .HasIndex(i => new { i.TournamentId, i.TeamId, i.Status });
+
+	modelBuilder.Entity<TournamentJoinRequest>()
+            .HasIndex(r => new { r.TournamentId, r.TeamId, r.Status });
 
         modelBuilder.Entity<Fixture>()
             .HasOne(f => f.HomeTeam)

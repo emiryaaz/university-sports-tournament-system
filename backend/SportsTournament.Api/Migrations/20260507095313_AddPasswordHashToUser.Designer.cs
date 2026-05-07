@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsTournament.Api.Data;
@@ -11,9 +12,11 @@ using SportsTournament.Api.Data;
 namespace SportsTournament.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260507095313_AddPasswordHashToUser")]
+    partial class AddPasswordHashToUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -191,71 +194,6 @@ namespace SportsTournament.Api.Migrations
                     b.ToTable("Teams");
                 });
 
-            modelBuilder.Entity("SportsTournament.Api.Models.TeamInvitation", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("InvitedByUserId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("InvitedUserId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("TeamId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InvitedByUserId");
-
-                    b.HasIndex("InvitedUserId");
-
-                    b.HasIndex("TeamId");
-
-                    b.ToTable("TeamInvitations");
-                });
-
-            modelBuilder.Entity("SportsTournament.Api.Models.TeamJoinRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("RequestedUserId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("TeamId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RequestedUserId");
-
-                    b.HasIndex("TeamId");
-
-                    b.ToTable("TeamJoinRequests");
-                });
-
             modelBuilder.Entity("SportsTournament.Api.Models.TeamMember", b =>
                 {
                     b.Property<int>("Id")
@@ -320,76 +258,6 @@ namespace SportsTournament.Api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Tournaments");
-                });
-
-            modelBuilder.Entity("SportsTournament.Api.Models.TournamentInvitation", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("InvitedByUserId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("TeamId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TournamentId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InvitedByUserId");
-
-                    b.HasIndex("TeamId");
-
-                    b.HasIndex("TournamentId", "TeamId", "Status");
-
-                    b.ToTable("TournamentInvitations");
-                });
-
-            modelBuilder.Entity("SportsTournament.Api.Models.TournamentJoinRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("RequestedByUserId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("TeamId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TournamentId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RequestedByUserId");
-
-                    b.HasIndex("TeamId");
-
-                    b.HasIndex("TournamentId", "TeamId", "Status");
-
-                    b.ToTable("TournamentJoinRequests");
                 });
 
             modelBuilder.Entity("SportsTournament.Api.Models.TournamentTeam", b =>
@@ -530,52 +398,6 @@ namespace SportsTournament.Api.Migrations
                     b.Navigation("Captain");
                 });
 
-            modelBuilder.Entity("SportsTournament.Api.Models.TeamInvitation", b =>
-                {
-                    b.HasOne("SportsTournament.Api.Models.User", "InvitedByUser")
-                        .WithMany()
-                        .HasForeignKey("InvitedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SportsTournament.Api.Models.User", "InvitedUser")
-                        .WithMany()
-                        .HasForeignKey("InvitedUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SportsTournament.Api.Models.Team", "Team")
-                        .WithMany()
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("InvitedByUser");
-
-                    b.Navigation("InvitedUser");
-
-                    b.Navigation("Team");
-                });
-
-            modelBuilder.Entity("SportsTournament.Api.Models.TeamJoinRequest", b =>
-                {
-                    b.HasOne("SportsTournament.Api.Models.User", "RequestedUser")
-                        .WithMany()
-                        .HasForeignKey("RequestedUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SportsTournament.Api.Models.Team", "Team")
-                        .WithMany()
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("RequestedUser");
-
-                    b.Navigation("Team");
-                });
-
             modelBuilder.Entity("SportsTournament.Api.Models.TeamMember", b =>
                 {
                     b.HasOne("SportsTournament.Api.Models.Team", "Team")
@@ -593,60 +415,6 @@ namespace SportsTournament.Api.Migrations
                     b.Navigation("Team");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("SportsTournament.Api.Models.TournamentInvitation", b =>
-                {
-                    b.HasOne("SportsTournament.Api.Models.User", "InvitedByUser")
-                        .WithMany()
-                        .HasForeignKey("InvitedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SportsTournament.Api.Models.Team", "Team")
-                        .WithMany()
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SportsTournament.Api.Models.Tournament", "Tournament")
-                        .WithMany()
-                        .HasForeignKey("TournamentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("InvitedByUser");
-
-                    b.Navigation("Team");
-
-                    b.Navigation("Tournament");
-                });
-
-            modelBuilder.Entity("SportsTournament.Api.Models.TournamentJoinRequest", b =>
-                {
-                    b.HasOne("SportsTournament.Api.Models.User", "RequestedByUser")
-                        .WithMany()
-                        .HasForeignKey("RequestedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SportsTournament.Api.Models.Team", "Team")
-                        .WithMany()
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SportsTournament.Api.Models.Tournament", "Tournament")
-                        .WithMany()
-                        .HasForeignKey("TournamentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("RequestedByUser");
-
-                    b.Navigation("Team");
-
-                    b.Navigation("Tournament");
                 });
 
             modelBuilder.Entity("SportsTournament.Api.Models.TournamentTeam", b =>
