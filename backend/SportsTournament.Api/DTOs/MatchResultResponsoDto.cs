@@ -14,5 +14,5 @@ public class MatchResultResponseDto
 
     public int AwayScore { get; set; }
 
-    public string WinnerTeamName { get; set; } = string.Empty;
+    public string? WinnerTeamName { get; set; }
 }

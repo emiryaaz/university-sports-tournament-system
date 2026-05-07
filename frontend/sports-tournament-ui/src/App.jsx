@@ -443,7 +443,7 @@ function App() {
     }
 
     try {
-      await api.post("/Fixtures/enter-result", {
+      await api.post("/MatchResults", {
         fixtureId,
         homeScore: Number(result.homeScore),
         awayScore: Number(result.awayScore),

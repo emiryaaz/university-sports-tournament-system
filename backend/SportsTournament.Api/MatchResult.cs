@@ -11,6 +11,6 @@ public class MatchResult
 
     public int AwayScore { get; set; }
 
-    public int WinnerTeamId { get; set; }
-    public Team WinnerTeam { get; set; } = null!;
+    public int? WinnerTeamId { get; set; }
+    public Team? WinnerTeam { get; set; }
 }

@@ -20,5 +20,9 @@ public class Fixture
 
     public string Status { get; set; } = "Scheduled";
 
+public int RoundNumber { get; set; } = 1;
+
+public int MatchNumber { get; set; } = 1;
+
     public MatchResult? MatchResult { get; set; }
 }

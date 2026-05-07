@@ -113,7 +113,7 @@ public async Task<ActionResult<MatchResultResponseDto>> GetFixtureResult(int id)
             HomeScore = r.HomeScore,
             AwayTeamName = r.Fixture.AwayTeam.Name,
             AwayScore = r.AwayScore,
-            WinnerTeamName = r.WinnerTeam.Name
+            WinnerTeamName = r.WinnerTeam != null ? r.WinnerTeam.Name : null
         })
         .FirstOrDefaultAsync();
 

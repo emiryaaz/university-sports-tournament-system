@@ -119,80 +119,137 @@ public async Task<ActionResult<TournamentResponseDto>> CreateTournament(CreateTo
     return CreatedAtAction(nameof(GetTournament), new { id = tournament.Id }, response);
 }
 
-    [HttpPost("{id}/generate-fixtures")]
-    public async Task<ActionResult<IEnumerable<FixtureResponseDto>>> GenerateFixtures(int id)
+[HttpPost("{id}/generate-fixtures")]
+public async Task<ActionResult<IEnumerable<FixtureResponseDto>>> GenerateFixtures(int id)
+{
+    var tournament = await _context.Tournaments
+        .Include(t => t.TournamentTeams)
+        .ThenInclude(tt => tt.Team)
+        .Include(t => t.Fixtures)
+        .FirstOrDefaultAsync(t => t.Id == id);
+
+    if (tournament == null)
+        return NotFound();
+
+    if (tournament.Fixtures.Any())
+        return BadRequest("Fixtures have already been generated for this tournament.");
+
+    var teams = tournament.TournamentTeams
+        .Select(tt => tt.Team)
+        .ToList();
+
+    if (teams.Count < 2)
+        return BadRequest("At least 2 teams are required to generate fixtures.");
+
+List<Fixture>? fixtures;
+
+try
+{
+    fixtures = tournament.Format switch
     {
-        var tournament = await _context.Tournaments
-            .Include(t => t.TournamentTeams)
-            .ThenInclude(tt => tt.Team)
-            .Include(t => t.Fixtures)
-            .FirstOrDefaultAsync(t => t.Id == id);
+        "RoundRobin" => GenerateRoundRobinFixtures(tournament, teams),
+        "SingleElimination" => GenerateSingleEliminationFixtures(tournament, teams),
+        _ => null
+    };
+}
+catch (InvalidOperationException ex)
+{
+    return BadRequest(ex.Message);
+}
 
-        if (tournament == null)
-            return NotFound();
+    if (fixtures == null)
+        return BadRequest("Tournament format must be RoundRobin or SingleElimination.");
 
-        if (tournament.Format != "RoundRobin")
-            return BadRequest("Fixture generation currently supports only RoundRobin tournaments.");
+    tournament.Status = "Scheduled";
 
-        if (tournament.Fixtures.Any())
-            return BadRequest("Fixtures have already been generated for this tournament.");
+    _context.Fixtures.AddRange(fixtures);
+    await _context.SaveChangesAsync();
 
-        var teams = tournament.TournamentTeams
-            .Select(tt => tt.Team)
-            .ToList();
-
-        if (teams.Count < 2)
-            return BadRequest("At least 2 teams are required to generate fixtures.");
-
-        var fixtures = new List<Fixture>();
-        var currentDate = tournament.StartDate;
-
-        for (int i = 0; i < teams.Count; i++)
+    var response = await _context.Fixtures
+        .Where(f => f.TournamentId == tournament.Id)
+        .Include(f => f.Tournament)
+        .Include(f => f.HomeTeam)
+        .Include(f => f.AwayTeam)
+        .OrderBy(f => f.RoundNumber)
+        .ThenBy(f => f.MatchNumber)
+        .Select(f => new FixtureResponseDto
         {
-            for (int j = i + 1; j < teams.Count; j++)
+            Id = f.Id,
+            TournamentId = f.TournamentId,
+            TournamentName = f.Tournament.Name,
+            HomeTeamId = f.HomeTeamId,
+            HomeTeamName = f.HomeTeam.Name,
+            AwayTeamId = f.AwayTeamId,
+            AwayTeamName = f.AwayTeam.Name,
+            MatchDate = f.MatchDate,
+            Status = f.Status
+        })
+        .ToListAsync();
+
+    return response;
+}
+
+private List<Fixture> GenerateRoundRobinFixtures(Tournament tournament, List<Team> teams)
+{
+    var fixtures = new List<Fixture>();
+    var currentDate = tournament.StartDate;
+    var matchNumber = 1;
+
+    for (int i = 0; i < teams.Count; i++)
+    {
+        for (int j = i + 1; j < teams.Count; j++)
+        {
+            if (currentDate > tournament.EndDate)
+                throw new InvalidOperationException("Tournament date range is not long enough for all fixtures.");
+
+            fixtures.Add(new Fixture
             {
-                if (currentDate > tournament.EndDate)
-                    return BadRequest("Tournament date range is not long enough for all fixtures.");
+                TournamentId = tournament.Id,
+                HomeTeamId = teams[i].Id,
+                AwayTeamId = teams[j].Id,
+                MatchDate = currentDate,
+                Status = "Scheduled",
+                RoundNumber = 1,
+                MatchNumber = matchNumber
+            });
 
-                fixtures.Add(new Fixture
-                {
-                    TournamentId = tournament.Id,
-                    HomeTeamId = teams[i].Id,
-                    AwayTeamId = teams[j].Id,
-                    MatchDate = currentDate,
-                    Status = "Scheduled"
-                });
-
-                currentDate = currentDate.AddDays(1);
-            }
+            matchNumber++;
+            currentDate = currentDate.AddDays(1);
         }
-
-        tournament.Status = "Scheduled";
-
-        _context.Fixtures.AddRange(fixtures);
-        await _context.SaveChangesAsync();
-
-        var response = await _context.Fixtures
-            .Where(f => f.TournamentId == tournament.Id)
-            .Include(f => f.Tournament)
-            .Include(f => f.HomeTeam)
-            .Include(f => f.AwayTeam)
-            .Select(f => new FixtureResponseDto
-            {
-                Id = f.Id,
-                TournamentId = f.TournamentId,
-                TournamentName = f.Tournament.Name,
-                HomeTeamId = f.HomeTeamId,
-                HomeTeamName = f.HomeTeam.Name,
-                AwayTeamId = f.AwayTeamId,
-                AwayTeamName = f.AwayTeam.Name,
-                MatchDate = f.MatchDate,
-                Status = f.Status
-            })
-            .ToListAsync();
-
-        return response;
     }
+
+    return fixtures;
+}
+
+private List<Fixture> GenerateSingleEliminationFixtures(Tournament tournament, List<Team> teams)
+{
+    var fixtures = new List<Fixture>();
+    var currentDate = tournament.StartDate;
+
+    for (int i = 0; i < teams.Count; i += 2)
+    {
+        if (i + 1 >= teams.Count)
+            break;
+
+        if (currentDate > tournament.EndDate)
+            throw new InvalidOperationException("Tournament date range is not long enough for all fixtures.");
+
+        fixtures.Add(new Fixture
+        {
+            TournamentId = tournament.Id,
+            HomeTeamId = teams[i].Id,
+            AwayTeamId = teams[i + 1].Id,
+            MatchDate = currentDate,
+            Status = "Scheduled",
+            RoundNumber = 1,
+            MatchNumber = (i / 2) + 1
+        });
+
+        currentDate = currentDate.AddDays(1);
+    }
+
+    return fixtures;
+}
 
 [HttpGet("{id}/standings")]
 public async Task<ActionResult<IEnumerable<StandingResponseDto>>> GetStandings(int id)
